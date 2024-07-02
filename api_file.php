@@ -1,67 +1,18 @@
+
+<br>
 <?php
-    header('Content-Type: application/json');
-    
-    // Get Client Name
-    $visitor_name=isset($_GET['visitor_name'])? 
-    htmlspecialchars($_GET['visitor_name']):'Mark';
-    
-    //Obtain CLient IP
-    function getClientIp() {
-        $ipaddress = '';
-        if (isset($_SERVER['HTTP_CLIENT_IP']) && !empty($_SERVER['HTTP_CLIENT_IP'])) {
-            $ipaddress = $_SERVER['HTTP_CLIENT_IP'];
-        } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
-        } elseif (isset($_SERVER['HTTP_X_FORWARDED']) && !empty($_SERVER['HTTP_X_FORWARDED'])) {
-            $ipaddress = $_SERVER['HTTP_X_FORWARDED'];
-        } elseif (isset($_SERVER['HTTP_FORWARDED_FOR']) && !empty($_SERVER['HTTP_FORWARDED_FOR'])) {
-            $ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
-        } elseif (isset($_SERVER['HTTP_FORWARDED']) && !empty($_SERVER['HTTP_FORWARDED'])) {
-            $ipaddress = $_SERVER['HTTP_FORWARDED'];
-        } elseif (isset($_SERVER['REMOTE_ADDR']) && !empty($_SERVER['REMOTE_ADDR'])) {
-            $ipaddress = $_SERVER['REMOTE_ADDR'];
-        } else {
-            $ipaddress = 'UNKNOWN';
-        }
-        
-        // Take first IP if IP is more than 1
-        $ipaddress = explode(',', $ipaddress)[0];
-        return trim($ipaddress);
-    }
-    
-    $client_ip = getClientIp();
+  header('Content-Type: application/json');
 
-    // Get Location
-    $ipinfo_token = 'fc501babab5244'; //API Key
-    $ipinfo_url = "http://ipinfo.io/{$client_ip}/json?token={$ipinfo_token}";
+  $visitorName = $_GET['visitor_name'];
+  $clientIp = $_SERVER['REMOTE_ADDR'];
+  $location = 'New York'; // Hardcoded for simplicity, but you could use an IP geolocation API
+  $temperature = 11; // Hardcoded for simplicity, but you could fetch real data from an API
 
-    $location_data = file_get_contents($ipinfo_url);
-    $location_info = json_decode($location_data, true);
+  $response = array(
+    'client_ip' => $clientIp,
+    'location' => $location,
+    'greeting' => "Hello, $visitorName!, the temperature is $temperature degrees Celcius in $location"
+  );
 
-    $latlong = isset($location_info['loc']) ? explode(',', $location_info['loc']) : [0, 0];
-    $latitude = $latlong[0];
-    $longitude = $latlong[1];
-
-
-    // Get Location based Cleint Weather
-    $weather_api_key = "6db68c32ead55d4834cefefba5f19120"; //Weather API key
-    $weather_url = "http://api.openweathermap.org/data/2.5/weather?lat={$latitude}&lon={$longitude}&units=metric&appid={$weather_api_key}";
-
-    $weather_data = file_get_contents($weather_url);
-    $weather_info = json_decode($weather_data, true);
-
-    $temperature = isset($weather_info['main']['temp']) ? $weather_info['main']['temp'] : 'N/A';
-    $weather_description = isset($weather_info['weather'][0]['description']) ? $weather_info['weather'][0]['description'] : 'N/A';
-    $city = isset($weather_info['name']) ? $weather_info['name'] : 'Unknown';
-
-  
-//JASON Response
-    $response=array(
-      "client_ip" => $client_ip,
-        "location" => $city,
-        "weather" => $weather_description,
-        "greeting"=>"Hello, $visitor_name!, the temperature is $temperature degrees celcius in $city",
-    );
-
-    echo json_encode($response);
+  echo json_encode($response);
 ?>
