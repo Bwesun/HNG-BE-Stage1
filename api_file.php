@@ -1,18 +1,55 @@
-
-<br>
 <?php
-  header('Content-Type: application/json');
 
-  $visitorName = $_GET['visitor_name'];
-  $clientIp = $_SERVER['REMOTE_ADDR'];
-  $location = 'New York'; // Hardcoded for simplicity, but you could use an IP geolocation API
-  $temperature = 11; // Hardcoded for simplicity, but you could fetch real data from an API
+function get_client_ip() {
+    $ipaddress = '';
+    if (isset($_SERVER['HTTP_CLIENT_IP']))
+        $ipaddress = $_SERVER['HTTP_CLIENT_IP'];
+    else if (isset($_SERVER['HTTP_X_FORWARDED_FOR']))
+        $ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
+    else if (isset($_SERVER['HTTP_X_FORWARDED']))
+        $ipaddress = $_SERVER['HTTP_X_FORWARDED'];
+    else if (isset($_SERVER['HTTP_FORWARDED_FOR']))
+        $ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
+    else if (isset($_SERVER['HTTP_FORWARDED']))
+        $ipaddress = $_SERVER['HTTP_FORWARDED'];
+    else if (isset($_SERVER['REMOTE_ADDR']))
+        $ipaddress = $_SERVER['REMOTE_ADDR'];
+    else
+        $ipaddress = 'UNKNOWN';
+    return $ipaddress;
+}
 
-  $response = array(
-    'client_ip' => $clientIp,
-    'location' => $location,
-    'greeting' => "Hello, $visitorName!, the temperature is $temperature degrees Celcius in $location"
-  );
+function get_location($ip) {
+    $json = file_get_contents("https://ip-api.com/json/{$ip}");
+    $details = json_decode($json);
+    return $details->city ?? 'Unknown';
+}
 
-  echo json_encode($response);
+function get_temperature($city) {
+    $apiKey = 'e9e8cb86930305cbf7723efdae0bc76b';
+    $city = urlencode($city);
+    $url = "https://api.openweathermap.org/data/2.5/weather?q={$city}&units=metric&appid={$apiKey}";
+    $json = file_get_contents($url);
+    $data = json_decode($json);
+    return $data->main->temp ?? 'Unknown';
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['visitor_name'])) {
+    $visitor_name = htmlspecialchars($_GET['visitor_name']);
+    $client_ip = get_client_ip();
+    $location = get_location($client_ip);
+    $temperature = get_temperature($location);
+
+    $response = [
+        'client_ip' => $client_ip,
+        'location' => $location,
+        'greeting' => "Hello, $visitor_name! The temperature is $temperature degrees Celsius in $location"
+    ];
+
+    header('Content-Type: application/json');
+    echo json_encode($response);
+} else {
+    echo "Use the endpoint /api/hello?visitor_name=Mark";
+}
+
 ?>
